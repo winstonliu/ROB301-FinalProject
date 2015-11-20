@@ -1,11 +1,8 @@
 import lejos.robotics.navigation.Pose;
 
 public class PathPlanner {
-	// Idea: using height map of obstacles, travel around the 
-	// obstacles keeping above a certain height on the hill.
-	
-	// Using a method similar to Voroni, but using thresholds 	
-	// Need:
+	// Use VFH+
+
 	// Goal orientation
 	// If height of next step in the goal orientation direction exceeds height band, while not approaching goal,
 	// add delta to orientation to keep within height band
