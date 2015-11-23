@@ -1,3 +1,7 @@
+import java.awt.geom.Point2D;
+import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
+
 import lejos.robotics.navigation.Pose;
 
 public class PathPlanner {
@@ -29,6 +33,33 @@ public class PathPlanner {
 		mylastPose = lastPose;
 		goal = destination;
 		finalApproach = Boolean.FALSE;
+	}
+	
+	public ArrayList<Float> calculateCandidateDir(ArrayList<Float> obstacleArray, float robotWidth, float ANGSTEPSIZE) {
+		// Calculate the candidate directions based on obstacles
+		// Threshold is to filter for noise
+		// ANGSTEPSIZE: angle step size -> size of angles between readings 
+		int thresh = 10;
+
+		ArrayList<Float> canDir = new ArrayList<Float>(); 
+		ArrayList<Float> canRanges= new ArrayList<Float>(); // Candidate ranges pairs, start, end
+		
+		// Simple edge detection, by threshold
+		float prevVal = 0;
+		float currentAngle = 0;
+		for (float f : obstacleArray) {
+			// Look for edges (to infinity)
+			if ((Math.abs(f - prevVal) > thresh) && (f >= 200 || prevVal >= 200)) {
+				canRanges.add(currentAngle);
+			}
+			currentAngle += ANGSTEPSIZE;
+		}
+		
+		// Go through canRanges and assign candidate directions based on start and end points
+		for (int i = 0; i < canRanges.size(); i += 2) {
+			if (canRanges[2*i] - canRanges[2*i+1] > 2*robotWidth)
+		}
+		
 	}
 
 	public float getPCDCost(float c0) {
