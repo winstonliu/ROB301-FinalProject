@@ -2,6 +2,7 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 
+import lejos.robotics.geometry.Point;
 import lejos.robotics.navigation.Pose;
 
 public class PathPlanner {
@@ -42,24 +43,53 @@ public class PathPlanner {
 		int thresh = 10;
 
 		ArrayList<Float> canDir = new ArrayList<Float>(); 
-		ArrayList<Float> canRanges= new ArrayList<Float>(); // Candidate ranges pairs, start, end
+		ArrayList<Point2D.Float> canRanges= new ArrayList<Point2D.Float>(); // Candidate ranges pairs, start, end
 		
 		// Simple edge detection, by threshold
 		float prevVal = 0;
 		float currentAngle = 0;
 		for (float f : obstacleArray) {
 			// Look for edges (to infinity)
-			if ((Math.abs(f - prevVal) > thresh) && (f >= 200 || prevVal >= 200)) {
-				canRanges.add(currentAngle);
+			if (Math.abs(f - prevVal) > thresh && (f >= 200 || prevVal >= 200)){
+                canRanges.add(new Point2D.Float(f,currentAngle)); // (height, angle)
 			}
+			prevVal = f;
 			currentAngle += ANGSTEPSIZE;
 		}
 		
 		// Go through canRanges and assign candidate directions based on start and end points
-		for (int i = 0; i < canRanges.size(); i += 2) {
-			if (canRanges[2*i] - canRanges[2*i+1] > 2*robotWidth)
-		}
+		int i = 0;
+		while (i < canRanges.size()){
+			// Check to make sure the gap is big enough
+			if (canRanges.get(i).x < 200){ // starts with negative edge
+				// ----        Top part is part we want
+				//	   |____ 
+				float gapTheta = canRanges.get(i).y - (float) (2*Math.asin((robotWidth/2)/canRanges.get(i).x));
+				canDir.add(gapTheta);
+				++i; // Increment to positive edge
+			}
+			// Case where there is a gap with two walls on either side
+			else if (i+1 < canRanges.size()) {
+				float delTheta = (canRanges.get(i+1).y - canRanges.get(i).y)/2;
+                float avgDist = (canRanges.get(i+1).x + canRanges.get(i).x)/2;
+                float halfGapSize = (float) (avgDist*Math.sin(delTheta));
+
+                if (2*halfGapSize > robotWidth) { 
+                    // Find candidate directions
+                	canDir.add(canRanges.get(i).y + (float) (2*Math.asin((robotWidth/2)/canRanges.get(i).x)));
+                	canDir.add(canRanges.get(i).y - (float) (2*Math.asin((robotWidth/2)/canRanges.get(i+1).x)));
+                }
+                i+=2; // This should make sure we only see positive edges from now on
+			}
+			// Case where there is an obstacle and nothing else on the other side
+			else {
+				float gapTheta = canRanges.get(i).y + (float) (2*Math.asin((robotWidth/2)/canRanges.get(i).x));
+				canDir.add(gapTheta);
+				++i;
+			}
+        }
 		
+		return canDir;
 	}
 
 	public float getPCDCost(float c0) {
