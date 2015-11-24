@@ -14,29 +14,16 @@ public class PathPlanner {
 	
 	// Need timestep -> freq of refresh rate
 
-	public Pose goal;
-	public Pose myPose;
-	public Pose mylastPose;
-	public Boolean finalApproach;
-	public float projDist; // dt
-	
-	// Coefficients
-	public float angRes = 5; // angular resolution of histogram
-	public float FULLROT = 360; // depends on if degrees or radians
+public float FULLROT = 360; // depends on if degrees or radians
 
 	// weight values for cost function
 	public int[] m = {5, 2, 2};
 
-	public PathPlanner(Pose currentPose, Pose lastPose, Pose destination) {
+	public PathPlanner() {
 		// TODO Auto-generated constructor stub
-		// ANGLES ARE ALL IN DEGREES
-		myPose = currentPose;
-		mylastPose = lastPose;
-		goal = destination;
-		finalApproach = Boolean.FALSE;
 	}
 	
-	public ArrayList<Float> calculateCandidateDir(ArrayList<Float> obstacleArray, float robotWidth, float ANGSTEPSIZE) {
+	public ArrayList<Float> calculateCandidateDir(float[] obstacleArray, float robotWidth, float ANGSTEPSIZE) {
 		// Calculate the candidate directions based on obstacles
 		// Threshold is to filter for noise
 		// ANGSTEPSIZE: angle step size -> size of angles between readings 
@@ -91,8 +78,21 @@ public class PathPlanner {
 		
 		return canDir;
 	}
+	
+	public float getOptimalDirection(ArrayList<Float> canDir, Pose myPose, Pose lastPose, Pose goal, float angRes) {
+        // Coefficients
+        // angRes = angular resolution of histogram
+		float mincost = Float.POSITIVE_INFINITY;
+		for (float f : canDir) {
+			float cost = getPCDCost(f, myPose, lastPose, goal, angRes);
+			if (cost < mincost) {
+				mincost = cost;
+			}
+		}
+		return mincost;
+	}
 
-	public float getPCDCost(float c0) {
+	public float getPCDCost(float c0, Pose myPose, Pose mylastPose, Pose goal, float angRes) {
         // Use VFH*
 		// Primary Candidate Direction
 		// c_1 = m1 * Vcf(c_0, kt) + m2 * Vcf(c_0, 
@@ -103,10 +103,10 @@ public class PathPlanner {
 		
         System.out.println(String.format(">>> %f: kt = %f; tn = %f.\n", c0, kt, tn));
 
-		return m[0] * DcCost(c0, kt) + m[1] * DcCost(c0, tn/angRes) + m[2] * DcCost(c0, mylastPose.getHeading());
+		return m[0] * DcCost(c0, kt, angRes) + m[1] * DcCost(c0, tn/angRes, angRes) + m[2] * DcCost(c0, mylastPose.getHeading(), angRes);
 	}
 	
-	public float DcCost(float c1, float c2) {
+	public float DcCost(float c1, float c2, float angRes) {
 		// Delta C Cost
 		// returns min{ |c1 - c2|, |c1 - c2 - 360/a|, |c1 - c2 + 360/a| }
 		// where a is the angular resolution of the histogram

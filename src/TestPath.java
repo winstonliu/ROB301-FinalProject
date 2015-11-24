@@ -8,15 +8,12 @@ public class TestPath {
 		Pose currentPose = new Pose(5, 7, 10);
 		Pose lastPose = new Pose(5, 4, 20);
 		Pose goalPose = new Pose(5, 6, 0);
-		PathPlanner myPlanner = new PathPlanner(currentPose,lastPose, goalPose);
-		float[] obstacleArray = {10, 60, 180};
-		ArrayList<Float> AngleCost = new ArrayList<Float>();
+		PathPlanner myPlanner = new PathPlanner();
 
-		for (float f : obstacleArray) {
-			float t = myPlanner.getPCDCost(f);
-			AngleCost.add(t);
-			System.out.println(String.format("Cost of %f is %f.\n", f, t));
-		}
+		ArrayList<Float> AngleCost  = myPlanner.calculateCandidateDir(obstacleArray, (float) (10), (float)(5));
+		float dir = myPlanner.getOptimalDirection(AngleCost, currentPose,lastPose, goalPose, (float) (5.0));
+
+        System.out.println(String.format("Dir is %f.\n", dir));
 	}
 
 }
