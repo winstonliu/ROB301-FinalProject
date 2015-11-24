@@ -1,4 +1,5 @@
 import java.awt.geom.Point2D;
+import java.lang.invoke.ConstantCallSite;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 
@@ -83,13 +84,22 @@ public float FULLROT = 360; // depends on if degrees or radians
         // Coefficients
         // angRes = angular resolution of histogram
 		float mincost = Float.POSITIVE_INFINITY;
-		for (float f : canDir) {
-			float cost = getPCDCost(f, myPose, lastPose, goal, angRes);
-			if (cost < mincost) {
-				mincost = cost;
-			}
+		float dir = 0;
+		float TERMINAL_RANGE = 20;
+		
+		if (myPose.getLocation().distance(goal.getLocation()) < TERMINAL_RANGE) {
+			dir = myPose.angleTo(goal.getLocation());
 		}
-		return mincost;
+		else {
+			for (float f : canDir) {
+                float cost = getPCDCost(f, myPose, lastPose, goal, angRes);
+                if (cost < mincost) {
+                        mincost = cost;
+                        dir = f;
+                }
+			}
+        }
+        return dir;
 	}
 
 	public float getPCDCost(float c0, Pose myPose, Pose mylastPose, Pose goal, float angRes) {
