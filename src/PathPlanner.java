@@ -24,10 +24,11 @@ public float FULLROT = 360; // depends on if degrees or radians
 		// TODO Auto-generated constructor stub
 	}
 	
-	public ArrayList<Float> calculateCandidateDir(float[] obstacleArray, float robotWidth, float ANGSTEPSIZE) {
+	public ArrayList<Float> calculateCandidateDir(float[] obstacleArray, float robotWidth, float ANGSTEPSIZE, Boolean findGap) {
 		// Calculate the candidate directions based on obstacles
 		// Threshold is to filter for noise
 		// ANGSTEPSIZE: angle step size -> size of angles between readings 
+		// When findGap = true -> algo attempts to find gaps between obstacles, when false, it goes towards the obstacles
 		int thresh = 10;
 
 		ArrayList<Float> canDir = new ArrayList<Float>(); 
@@ -49,7 +50,7 @@ public float FULLROT = 360; // depends on if degrees or radians
 		int i = 0;
 		while (i < canRanges.size()){
 			// Check to make sure the gap is big enough
-			if (canRanges.get(i).x < 200){ // starts with negative edge
+			if ((canRanges.get(i).x < 200 && findGap) || (canRanges.get(i).x > 200 && !findGap)){ // starts with negative edge
 				// ----        Top part is part we want
 				//	   |____ 
 				float gapTheta = canRanges.get(i).y - (float) (2*Math.asin((robotWidth/2)/canRanges.get(i).x));
@@ -58,20 +59,33 @@ public float FULLROT = 360; // depends on if degrees or radians
 			}
 			// Case where there is a gap with two walls on either side
 			else if (i+1 < canRanges.size()) {
-				float delTheta = (canRanges.get(i+1).y - canRanges.get(i).y)/2;
+				
+								float delTheta = (canRanges.get(i+1).y - canRanges.get(i).y)/2;
                 float avgDist = (canRanges.get(i+1).x + canRanges.get(i).x)/2;
                 float halfGapSize = (float) (avgDist*Math.sin(delTheta));
 
                 if (2*halfGapSize > robotWidth) { 
                     // Find candidate directions
-                	canDir.add(canRanges.get(i).y + (float) (2*Math.asin((robotWidth/2)/canRanges.get(i).x)));
-                	canDir.add(canRanges.get(i).y - (float) (2*Math.asin((robotWidth/2)/canRanges.get(i+1).x)));
+                	if (findGap) {
+                		canDir.add(canRanges.get(i).y + (float) (2*Math.asin((robotWidth/2)/canRanges.get(i).x)));
+                        canDir.add(canRanges.get(i).y - (float) (2*Math.asin((robotWidth/2)/canRanges.get(i+1).x)));
+                	}
+                	else {
+                        canDir.add(canRanges.get(i).y - (float) (2*Math.asin((robotWidth/2)/canRanges.get(i).x)));
+                        canDir.add(canRanges.get(i).y + (float) (2*Math.asin((robotWidth/2)/canRanges.get(i+1).x)));
+					}
                 }
                 i+=2; // This should make sure we only see positive edges from now on
 			}
 			// Case where there is an obstacle and nothing else on the other side
 			else {
-				float gapTheta = canRanges.get(i).y + (float) (2*Math.asin((robotWidth/2)/canRanges.get(i).x));
+				float gapTheta = 0;
+				if (findGap) {
+					gapTheta = canRanges.get(i).y + (float) (2*Math.asin((robotWidth/2)/canRanges.get(i).x));
+				}
+				else {
+					gapTheta = canRanges.get(i).y - (float) (2*Math.asin((robotWidth/2)/canRanges.get(i).x));
+				}
 				canDir.add(gapTheta);
 				++i;
 			}
